@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vakond játék</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f8ff;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: #333;
+            margin-top: 20px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .score-board {
+            font-size: 1.2rem;
+            font-family: 'Courier New', Courier, monospace;
+            color: #333;
+            margin: 20px;
+        }
+
+        .score {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #ff6347;
+        }
+
+        #record {
+            font-size: 18px;
+            text-decoration: underline;
+            font-weight: bold;
+        }
+
+        #timer{
+            color: red;
+            font-weight: bold;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-gap: 10px;
+            justify-content: center;
+            margin: 20px auto;
+            max-width: 600px;
+            aspect-ratio: 1 / 1;
+            padding: 10px;
+        }
+
+        .hole {
+            width: calc(100% - 10px);
+            aspect-ratio: 1 / 1;
+            background-color: #ad6543;
+            border-radius: 50%;
+            border: 5px solid #80452a;
+            position: relative;
+            overflow: hidden;
+            background-image: radial-gradient(circle, #a0522d, #8b4513);
+        }
+
+        .mole {
+            width: 60%;
+            height: 60%;
+            background-image: url('vakond.png');
+            background-size: cover;
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            cursor: pointer;
+        }
+
+        .start-btn {
+            font-size: 1.2rem;
+            padding: 10px 15px;
+            margin-top: 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .start-btn:hover {
+            background-color: #218838;
+        }
+
+        .record {
+            font-size: 1.5rem;
+            margin-top: 10px;
+            font-family: 'Courier New', Courier, monospace;
+            color: #333;
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.5rem;
+            }
+            .score-board {
+                font-size: 1rem;
+            }
+            .score {
+                font-size: 1.5rem;
+            }
+            .start-btn {
+                font-size: 1rem;
+                padding: 8px 12px;
+            }
+            .game-board {
+                grid-gap: 10px;
+                max-width: 90vw;
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Vakond játék</h1>
+    <div class="score-board">
+        <p>Pontszám: <span id="score" class="score">0</span></p>
+        <div id="record" class="record">Legjobb pontszám: 0</div>
+        <p>Hátralévő idő: <span id="timer">30</span> másodperc</p>
+    </div>
+    <button id="start-btn" class="start-btn">Kezdés</button>
+    <div class="game-board" id="board"></div>
+
+
+    <script>
+        const board = document.getElementById("board");
+        const scoreDisplay = document.getElementById("score");
+        const startButton = document.getElementById("start-btn");
+        const timerDisplay = document.getElementById("timer");
+        const recordDisplay = document.getElementById("record");
+
+        let score = 0;
+        let activeMole = null;
+        let gameInterval = null;
+        let timer = 30;
+        let timerInterval = null;
+
+        let highestScore = localStorage.getItem('highestScore') || 0;
+        recordDisplay.textContent = `Legjobb pontszám: ${highestScore}`;
+
+        function createBoard() {
+            board.innerHTML = "";
+            for (let i = 0; i < 25; i++) {
+                const hole = document.createElement("div");
+                hole.classList.add("hole");
+                hole.dataset.index = i;
+                board.appendChild(hole);
+            }
+        }
+
+        function showMole() {
+            if (activeMole) {
+                activeMole.remove();
+            }
+            const holes = document.querySelectorAll(".hole");
+            const randomHole = holes[Math.floor(Math.random() * holes.length)];
+            const mole = document.createElement("div");
+            mole.classList.add("mole");
+            mole.addEventListener("click", hitMole);
+            randomHole.appendChild(mole);
+            activeMole = mole;
+        }
+
+        function hitMole() {
+            score++;
+            scoreDisplay.textContent = score;
+            activeMole.remove();
+            activeMole = null;
+        }
+
+        function startGame() {
+            score = 0;
+            timer = 30;
+            scoreDisplay.textContent = score;
+            timerDisplay.textContent = `${timer}`;
+            createBoard();
+            clearInterval(gameInterval);
+            gameInterval = setInterval(showMole, 700);
+            startButton.textContent = "Kilépés";
+            startButton.removeEventListener("click", startGame);
+            startButton.addEventListener("click", exitGame);
+
+            clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function updateTimer() {
+            if (timer > 0) {
+                timer--;
+                timerDisplay.textContent = `${timer}`;
+            } else {
+                endGame();
+            }
+        }
+
+        function endGame() {
+            clearInterval(gameInterval);
+            clearInterval(timerInterval);
+            if (score > highestScore) {
+                highestScore = score;
+                localStorage.setItem('highestScore', highestScore);
+                recordDisplay.textContent = `Legjobb pontszám: ${highestScore}`;
+            }
+            startButton.textContent = "Kezdés";
+            startButton.removeEventListener("click", exitGame);
+            startButton.addEventListener("click", startGame);
+        }
+
+        function exitGame() {
+            window.location.href = "index.html";
+        }
+
+        startButton.addEventListener("click", startGame);
+    </script>
+</body>
+</html>
