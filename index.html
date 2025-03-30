@@ -208,6 +208,10 @@
         function endGame() {
             clearInterval(gameInterval);
             clearInterval(timerInterval);
+            if (activeMole) {
+                activeMole.remove();
+                activeMole = null;
+            }
             if (score > highestScore) {
                 highestScore = score;
                 localStorage.setItem('highestScore', highestScore);
@@ -216,6 +220,8 @@
             startButton.textContent = "Kezdés";
             startButton.removeEventListener("click", exitGame);
             startButton.addEventListener("click", startGame);
+            alert("Lejárt az idő! A pontszámod: " + score);
+            location.reload();
         }
 
         function exitGame() {
